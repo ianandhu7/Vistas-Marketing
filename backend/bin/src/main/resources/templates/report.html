@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Payment Receipt</title>
+    <link rel="shortcut icon" href="https://paytm.com/favicon.ico">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
+	<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+    <script src="https://code.jquery.com/jquery-3.6.1.slim.min.js" integrity="sha256-w8CvhFs7iHNVUtnSP0YKEg00p9Ih13rlL9zGqvLdePA="crossorigin="anonymous"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
+	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
+	<style type="text/css">
+		.container {width: 80%}
+		.width100 {width: 100%}
+		.width50 {width: 50%}
+	</style>
+</head>
+<body>
+<div class="container">
+    <div class="row">
+        <div class="mx-auto col-xs-6 col-sm-6 col-md-6">
+            <div class="row">
+                <div class="col-xs-4 col-sm-4 col-md-4 width50">
+                    <em>Status: </em><em style=" font-weight: bold;" th:text="${result}">Success</em>
+                </div>
+                <div class="col-xs-8 col-sm-8 col-md-8 text-right width50">
+                    <p>
+                        <em>Receipt #: </em><em style=" font-weight: bold;" th:text="${receptNum}">1234567890</em>
+                    </p>
+                </div>
+            </div>
+            <div class="row">
+            	<div class="text-center width100">
+                    <h4>Payment Receipt</h4>
+                </div>
+            </div>
+            <div class="row">
+             <table class="table table-striped">
+             	<thead>
+                  <tr>
+                      <th>Components</th>
+                      <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr th:each="entry : ${parameters}">
+                      <td style="width: 50%" th:text="${entry.key}+' : '"></td>
+                      <td style="width: 50%" th:text="${entry.value}"></td>
+                  </tr>
+                </tbody>
+              </table>
+              <button type="button" onclick="backToApp()" style="display: none" id="displayButton" class="btn btn-info btn-sm btn-block"><span class="fa fa-chevron-left"></span>&nbsp;&nbsp;RETURN</button>
+            </div>
+        </div>
+        <span id="paymentCallBackURLId" style="display:none" th:text="${paymentCallBackURL}"></span>
+    </div>
+</div>
+<script type="text/javascript">
+   $("#displayButton").show();
+	function backToApp(){
+		var myURL = document.getElementById("paymentCallBackURLId").innerText;
+		window.location.href = myURL;
+	}
+</script>
+</body>
+</html>
