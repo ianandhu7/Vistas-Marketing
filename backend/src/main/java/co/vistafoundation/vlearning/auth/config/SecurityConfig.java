@@ -111,7 +111,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 					.contentSecurityPolicy(
 						"default-src 'self'; " +
 						"script-src 'self' 'unsafe-inline' 'unsafe-eval' https://checkout.razorpay.com https://cdn.razorpay.com https://www.google.com/ https://www.gstatic.com/ https://*.firebaseapp.com https://apis.google.com; " +
-						"connect-src 'self' ws://localhost:* http://localhost:* https://api.razorpay.com https://lumberjack.razorpay.com https://www.google.com/ https://*.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.googleapis.com https://*.firebase.com; " +
+						"connect-src 'self' ws://localhost:* http://localhost:* https://api-prod.vistaslearning.com https://api.razorpay.com https://lumberjack.razorpay.com https://www.google.com/ https://*.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.googleapis.com https://*.firebase.com; " +
 						"style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
 						"font-src 'self' https://fonts.gstatic.com; " +
 						"img-src 'self' data: https:; " +

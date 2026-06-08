@@ -76,10 +76,21 @@ const switchTo14Months = () => {
 </script>
 
 <template>
-  <div v-if="store.currentModal" class="fixed inset-0 z-[100] flex items-center justify-center p-4">
+  <div v-if="store.currentModal" class="fixed inset-0 z-[100] flex flex-col items-center justify-center p-4">
     <!-- Backdrop -->
     <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" @click="handleClose"></div>
     
+    <!-- Error Toast (Sitting directly above the card) -->
+    <div 
+      v-if="store.error && store.currentModal !== 'already_subscribed'"
+      class="relative z-[110] mb-4 w-full max-w-[420px] px-6 py-4 bg-red-950/90 backdrop-blur-md border border-red-500/40 rounded-2xl shadow-2xl animate-in fade-in slide-in-from-top-4 duration-300 text-center"
+    >
+      <p class="text-red-200 text-xs font-black tracking-wide flex items-center justify-center gap-2">
+        <span class="material-symbols-outlined text-[18px] text-red-400">error_outline</span>
+        {{ store.error }}
+      </p>
+    </div>
+
     <!-- Modal Container -->
     <div 
       class="relative w-full max-w-[420px] rounded-[24px] shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300"
@@ -159,6 +170,17 @@ const switchTo14Months = () => {
         </div>
 
         <div class="space-y-6">
+          <!-- Name Input for New Users -->
+          <div class="relative">
+            <input
+              :value="store.userName"
+              @input="store.setUserName($event.target.value)"
+              type="text"
+              placeholder="Enter your full name"
+              class="w-full bg-[var(--bg-secondary)] border border-[var(--border-light)] rounded-xl py-4 px-4 text-[var(--text-primary)] font-black focus:border-[var(--accent-purple)] focus:ring-1 focus:ring-[var(--accent-purple)] outline-none transition-all"
+            />
+          </div>
+
           <div class="relative">
             <div class="absolute left-4 top-1/2 -translate-y-1/2 flex items-center gap-2 border-r border-[var(--border-light)] pr-3">
               <span class="text-[var(--text-primary)]/40 text-sm">🇮🇳</span>
@@ -174,12 +196,8 @@ const switchTo14Months = () => {
             />
           </div>
 
-          <div v-if="store.error" class="text-red-500 text-xs text-center font-bold bg-red-500/10 py-2 rounded-lg">
-            {{ store.error }}
-          </div>
-
           <button 
-            @click="store.sendOtp('recaptcha-container')"
+            @click="store.sendOtp()"
             :disabled="store.loading"
             class="w-full py-4 bg-[var(--accent-purple)] text-white font-black uppercase tracking-widest rounded-xl hover:brightness-110 shadow-lg transition-all disabled:opacity-50 flex items-center justify-center gap-2"
           >
@@ -232,10 +250,6 @@ const switchTo14Months = () => {
             </span>
           </div>
 
-          <div v-if="store.error" class="text-red-500 text-xs text-center font-bold bg-red-500/10 py-2 rounded-lg">
-            {{ store.error }}
-          </div>
-
           <button 
             @click="store.verifyOtpAndCheckout()"
             :disabled="store.loading || !store.termsAccepted"
@@ -247,7 +261,7 @@ const switchTo14Months = () => {
 
           <div class="text-center">
             <p v-if="timer > 0" class="text-[11px] text-[var(--text-secondary)]">Resend OTP in <span class="text-[var(--text-primary)] font-black">{{ timer }}s</span></p>
-            <button v-else @click="store.sendOtp('recaptcha-container')" class="text-[11px] text-[var(--accent-purple)] font-black hover:underline">Resend OTP Now</button>
+            <button v-else @click="store.sendOtp()" class="text-[11px] text-[var(--accent-purple)] font-black hover:underline">Resend OTP Now</button>
           </div>
         </div>
       </div>
@@ -286,13 +300,11 @@ const switchTo14Months = () => {
     </div>
   </div>
 
-  <!-- Permanent reCAPTCHA Container -->
-  <div id="recaptcha-container" class="fixed bottom-0 right-0 opacity-0 pointer-events-none"></div>
-
   <!-- Global Toast -->
   <div 
     v-if="store.toastMessage"
-    class="fixed bottom-8 left-1/2 -translate-x-1/2 z-[200] px-6 py-3 bg-[var(--bg-card)] border border-[var(--accent-purple)]/50 rounded-full shadow-2xl animate-in slide-in-from-bottom-10 duration-300"
+    class="fixed bottom-8 left-1/2 z-[200] px-6 py-3 bg-[var(--bg-card)] border border-[var(--accent-purple)]/50 rounded-full shadow-2xl animate-in slide-in-from-bottom-10 duration-300"
+    :style="{ transform: 'translateX(-50%)' }"
   >
     <p class="text-[var(--text-primary)] text-xs font-black tracking-wide flex items-center gap-2">
       <span class="material-symbols-outlined text-[16px] text-[var(--accent-purple)]">info</span>

@@ -1,5 +1,4 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import { getAuth } from 'firebase/auth'
 import HomeView from '../views/HomeView.vue'
 
 const router = createRouter({
@@ -13,17 +12,17 @@ const router = createRouter({
     {
       path: '/courses',
       name: 'courses',
-      component: HomeView // Placeholder
+      component: HomeView
     },
     {
       path: '/blog',
       name: 'blog',
-      component: HomeView // Placeholder
+      component: HomeView
     },
     {
       path: '/pricing',
       name: 'pricing',
-      component: HomeView // Placeholder
+      component: HomeView
     },
     {
       path: '/payment-success',
@@ -39,10 +38,11 @@ const router = createRouter({
   ]
 })
 
+// Auth guard now uses localStorage instead of Firebase
 router.beforeEach((to, from, next) => {
   if (to.meta.requiresAuth) {
-    const auth = getAuth()
-    if (!auth.currentUser) {
+    const token = localStorage.getItem('accessToken')
+    if (!token) {
       next({ name: 'home' })
     } else {
       next()
