@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
+import { isLoggedIn } from '../services/storage'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -41,8 +42,7 @@ const router = createRouter({
 // Auth guard now uses localStorage instead of Firebase
 router.beforeEach((to, from, next) => {
   if (to.meta.requiresAuth) {
-    const token = localStorage.getItem('accessToken')
-    if (!token) {
+    if (!isLoggedIn()) {
       next({ name: 'home' })
     } else {
       next()

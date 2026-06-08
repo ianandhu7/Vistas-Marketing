@@ -1,14 +1,4 @@
 export function saveUserToLocalStorage(data) {
-  localStorage.setItem('accessToken', data.accessToken)
-  localStorage.setItem('refreshToken', data.refreshToken)
-  localStorage.setItem('userSurId', String(data.userSurId))
-  localStorage.setItem('firstName', data.firstName || '')
-  localStorage.setItem('lastName', data.lastName || '')
-  localStorage.setItem('mobileNumber', data.mobileNumber || '')
-  localStorage.setItem('email', data.email || '')
-  localStorage.setItem('userProfilePic', data.userProfilePic || '')
-  localStorage.setItem('registeredAs', data.registeredAs || 'Student')
-
   const subFlag = data.subscriptionFlag
   const isSubscribed =
     subFlag === true ||
@@ -16,56 +6,73 @@ export function saveUserToLocalStorage(data) {
   const isTrial =
     subFlag && subFlag.trialFlag === true
 
-  localStorage.setItem('isSubscribed', String(isSubscribed))
-  localStorage.setItem('isTrial', String(isTrial))
+  const authData = {
+    accessToken: data.accessToken,
+    refreshToken: data.refreshToken,
+    userSurId: String(data.userSurId),
+    firstName: data.firstName || '',
+    lastName: data.lastName || '',
+    mobileNumber: data.mobileNumber || '',
+    email: data.email || '',
+    userProfilePic: data.userProfilePic || '',
+    registeredAs: data.registeredAs || 'Student',
+    isSubscribed,
+    isTrial,
+    syllabus: data.syllabusObject || null,
+    classStandard: data.classStandardObject || null,
+    state: data.stateObject || null,
+    userData: data
+  }
 
-  if (data.syllabusObject) {
-    localStorage.setItem('syllabus', JSON.stringify(data.syllabusObject))
-  }
-  if (data.classStandardObject) {
-    localStorage.setItem('classStandard', JSON.stringify(data.classStandardObject))
-  }
-  if (data.stateObject) {
-    localStorage.setItem('state', JSON.stringify(data.stateObject))
-  }
-
-  localStorage.setItem('userData', JSON.stringify(data))
+  localStorage.setItem('vista-auth', JSON.stringify(authData))
 }
 
 export function clearUserFromLocalStorage() {
+  localStorage.removeItem('vista-auth')
+
+  // also clear legacy keys for safety / migration cleanup
   const keys = [
     'accessToken', 'refreshToken', 'userSurId',
     'firstName', 'lastName', 'mobileNumber',
     'email', 'userProfilePic', 'registeredAs',
     'isSubscribed', 'isTrial', 'syllabus',
     'classStandard', 'state', 'userData',
-    // old keys from previous version
     'authToken', 'user', 'subscriptionStatus', 'userPhone'
   ]
   keys.forEach(k => localStorage.removeItem(k))
 }
 
 export function getUserFromLocalStorage() {
+  try {
+    const authData = JSON.parse(localStorage.getItem('vista-auth') || 'null')
+    if (authData) {
+      return authData
+    }
+  } catch (e) {
+    console.error('Error parsing vista-auth:', e)
+  }
   return {
-    accessToken:    localStorage.getItem('accessToken'),
-    refreshToken:   localStorage.getItem('refreshToken'),
-    userSurId:      localStorage.getItem('userSurId'),
-    firstName:      localStorage.getItem('firstName'),
-    lastName:       localStorage.getItem('lastName'),
-    mobileNumber:   localStorage.getItem('mobileNumber'),
-    email:          localStorage.getItem('email'),
-    userProfilePic: localStorage.getItem('userProfilePic'),
-    isSubscribed:   localStorage.getItem('isSubscribed') === 'true',
-    isTrial:        localStorage.getItem('isTrial') === 'true',
-    registeredAs:   localStorage.getItem('registeredAs'),
-    userData:       JSON.parse(localStorage.getItem('userData') || 'null')
+    accessToken: null,
+    refreshToken: null,
+    userSurId: null,
+    firstName: '',
+    lastName: '',
+    mobileNumber: '',
+    email: '',
+    userProfilePic: '',
+    isSubscribed: false,
+    isTrial: false,
+    registeredAs: 'Student',
+    userData: null
   }
 }
 
 export function isLoggedIn() {
-  return !!localStorage.getItem('accessToken')
+  const auth = getUserFromLocalStorage()
+  return !!auth.accessToken
 }
 
 export function isSubscribed() {
-  return localStorage.getItem('isSubscribed') === 'true'
+  const auth = getUserFromLocalStorage()
+  return auth.isSubscribed === true
 }

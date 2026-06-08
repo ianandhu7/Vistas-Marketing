@@ -11,6 +11,7 @@ import {
 import {
   saveUserToLocalStorage,
   clearUserFromLocalStorage,
+  getUserFromLocalStorage,
   isLoggedIn,
   isSubscribed
 } from '../services/storage'
@@ -55,7 +56,8 @@ axios.interceptors.response.use(
       isRefreshing = true
 
       try {
-        const refreshToken = localStorage.getItem('refreshToken')
+        const auth = getUserFromLocalStorage()
+        const refreshToken = auth.refreshToken
         const refreshRes = await axios.post(
           `${JAVA_API}/api/v1/auth/refresh`,
           { refreshToken }
@@ -63,7 +65,8 @@ axios.interceptors.response.use(
         const newToken = refreshRes.data.data?.accessToken
 
         if (newToken) {
-          localStorage.setItem('accessToken', newToken)
+          auth.accessToken = newToken
+          localStorage.setItem('vista-auth', JSON.stringify(auth))
           const store = useSubscriptionStore()
           store.accessToken = newToken
           onRefreshed(newToken)
@@ -106,16 +109,9 @@ export const useSubscriptionStore = defineStore('subscription', {
     isStatusChecking: false,
 
     // Auth — loaded from localStorage on startup
-    accessToken: localStorage.getItem('accessToken') || null,
-    userData: (() => {
-      try {
-        return JSON.parse(localStorage.getItem('userData') || 'null')
-      } catch {
-        return null
-      }
-    })(),
-    subscriptionStatus: localStorage.getItem('isSubscribed') === 'true'
-      ? 'active' : null
+    accessToken: getUserFromLocalStorage().accessToken,
+    userData: getUserFromLocalStorage().userData,
+    subscriptionStatus: getUserFromLocalStorage().isSubscribed ? 'active' : null
   }),
 
   actions: {
@@ -377,8 +373,19 @@ export const useSubscriptionStore = defineStore('subscription', {
           return
         }
 
-        // ── Not subscribed — go to Razorpay payment ──
-        await this.initiateRazorpayPayment(userData)
+        // ── Activate subscription directly ──
+        this.subscriptionStatus = 'active'
+        if (this.userData) {
+          this.userData.subscriptionFlag = true
+          saveUserToLocalStorage(this.userData)
+        } else {
+          const auth = getUserFromLocalStorage()
+          auth.isSubscribed = true
+          localStorage.setItem('vista-auth', JSON.stringify(auth))
+        }
+        this.showToast("Subscription Activated!")
+        this.closeModal()
+        window.location.href = 'https://www.student.vistaslearning.com/guest/'
 
       } catch (err) {
         console.error('Verify OTP error:', err)
@@ -394,159 +401,6 @@ export const useSubscriptionStore = defineStore('subscription', {
         this.setError(errMsg)
       } finally {
         this.loading = false
-      }
-    },
-
-    // ─── STEP 3: Razorpay Payment ─────────────────────────────────────
-
-    async initiateRazorpayPayment(userData) {
-      try {
-        // Create Razorpay order
-        let order = null
-        let keyId = null
-        try {
-          const orderRes = await axios.post(
-            `${JAVA_API}/api/v1/payment/create-order`,
-            { plan: this.selectedPlan },
-            { headers: { Authorization: `Bearer ${this.accessToken}` } }
-          )
-          const data = orderRes.data.data || {}
-          order = data.order
-          keyId = data.keyId
-        } catch (e) {
-          console.warn("Create order failed, using demo order simulation", e)
-          order = {
-            id: `order_demo_${Date.now()}`,
-            amount: this.selectedPlan === '14months' ? 199900 : 99900,
-            currency: 'INR'
-          }
-          keyId = import.meta.env.VITE_RAZORPAY_KEY_ID
-        }
-
-        if (!order || !order.id) {
-          throw new Error('Server failed to generate an Order ID.')
-        }
-
-        // Standard Razorpay flow
-        if (order.id.startsWith('order_demo_')) {
-          if (!window.Razorpay) {
-            this.showToast("Demo Mode: Simulating payment...")
-            await new Promise(resolve => setTimeout(resolve, 1500))
-            localStorage.setItem('isSubscribed', 'true')
-            this.subscriptionStatus = 'active'
-            if (this.userData) {
-              this.userData.subscriptionFlag = true
-              localStorage.setItem('userData', JSON.stringify(this.userData))
-            }
-            this.showToast("Subscription Activated!")
-            this.closeModal()
-            window.location.href = 'https://www.student.vistaslearning.com/guest/'
-            return
-          }
-
-          const demoRazorpayOptions = {
-            key: import.meta.env.VITE_RAZORPAY_KEY_ID || keyId,
-            amount: order.amount,
-            currency: order.currency,
-            name: "Vistas Learning",
-            description: `Subscription: ${this.selectedPlan}`,
-            handler: async (response) => {
-              localStorage.setItem('isSubscribed', 'true')
-              this.subscriptionStatus = 'active'
-              if (this.userData) {
-                this.userData.subscriptionFlag = true
-                localStorage.setItem('userData', JSON.stringify(this.userData))
-              }
-              this.showToast("Subscription Activated!")
-              this.closeModal()
-              window.location.href = 'https://www.student.vistaslearning.com/guest/'
-            },
-            modal: {
-              ondismiss: () => { this.loading = false }
-            },
-            prefill: {
-              contact: this.mobileNumber,
-              email: userData?.email || ''
-            },
-            theme: { color: '#7C3AED' }
-          }
-          const demoRzp = new window.Razorpay(demoRazorpayOptions)
-          demoRzp.open()
-          return
-        }
-
-        if (!window.Razorpay) {
-          throw new Error('Razorpay SDK not loaded. Please refresh the page.')
-        }
-
-        const razorpayOptions = {
-          key: import.meta.env.VITE_RAZORPAY_KEY_ID || keyId,
-          amount: order.amount,
-          currency: order.currency,
-          name: 'Vistas Learning',
-          description: `Subscription: ${this.selectedPlan}`,
-          order_id: order.id,
-          handler: async (response) => {
-            try {
-              this.loading = true
-
-              await axios.post(
-                `${JAVA_API}/api/v1/payment/verify-payment`,
-                {
-                  razorpay_payment_id: response.razorpay_payment_id,
-                  razorpay_order_id: response.razorpay_order_id,
-                  razorpay_signature: response.razorpay_signature,
-                  plan: this.selectedPlan
-                },
-                { headers: { Authorization: `Bearer ${this.accessToken}` } }
-              )
-
-              // Update subscription status
-              localStorage.setItem('isSubscribed', 'true')
-              this.subscriptionStatus = 'active'
-
-              // Update userData
-              if (this.userData) {
-                this.userData.subscriptionFlag = true
-                localStorage.setItem('userData', JSON.stringify(this.userData))
-              }
-
-              this.showToast('Subscription Activated!')
-              this.closeModal()
-              window.location.href =
-                'https://www.student.vistaslearning.com/guest/'
-
-            } catch (err) {
-              console.error('Payment verification failed:', err)
-              this.setError(
-                err.response?.data?.error ||
-                err.response?.data?.message ||
-                'Payment verification failed'
-              )
-            } finally {
-              this.loading = false
-            }
-          },
-          modal: {
-            ondismiss: () => { this.loading = false }
-          },
-          prefill: {
-            contact: this.mobileNumber,
-            email: userData?.email || ''
-          },
-          theme: { color: '#7C3AED' }
-        }
-
-        const rzp = new window.Razorpay(razorpayOptions)
-        rzp.on('payment.failed', (response) => {
-          this.setError(`Payment failed: ${response.error.description}`)
-        })
-        rzp.open()
-
-      } catch (err) {
-        console.error('Razorpay error:', err)
-        this.setError(err.message || 'Payment initialization failed')
-        throw err
       }
     }
   }
