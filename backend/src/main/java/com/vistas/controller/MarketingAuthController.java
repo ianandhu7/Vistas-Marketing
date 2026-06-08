@@ -59,6 +59,9 @@ public class MarketingAuthController {
         }
     }
 
+    @org.springframework.beans.factory.annotation.Value("${app.demo.mode:false}")
+    private boolean demoMode;
+
     // The OTP is sent by Firebase on the frontend directly
     // This endpoint just verifies the Firebase token after OTP success
     @PostMapping("/verify-otp")
@@ -79,7 +82,7 @@ public class MarketingAuthController {
 
             // Verify Firebase token and extract phone number
             String phoneNumber;
-            if ("demo-token".equals(idToken)) {
+            if (demoMode && "demo-token".equals(idToken)) {
                 phoneNumber = request.get("phoneNumber");
                 if (phoneNumber == null || phoneNumber.isEmpty()) {
                     phoneNumber = "9745974709";

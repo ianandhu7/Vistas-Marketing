@@ -11,7 +11,7 @@ const API_URL = `${import.meta.env.VITE_API_URL}/api/v1`
 if (!import.meta.env.VITE_API_URL) {
   throw new Error('[Vistas] VITE_API_URL is not defined. Add it to your .env file.')
 }
-const IS_DEMO_MODE = import.meta.env.VITE_DEMO_MODE === 'true'
+const IS_DEMO_MODE = import.meta.env.VITE_DEMO_MODE === 'true' && import.meta.env.DEV
 
 // Automatically bypass ngrok landing warnings for API requests
 // axios.defaults.headers.common['ngrok-skip-browser-warning'] = 'true'
@@ -208,8 +208,6 @@ export const useSubscriptionStore = defineStore('subscription', {
       this.loading = true
       this.error = null
 
-      // DEMO MODE: When VITE_DEMO_MODE=true, bypass Firebase OTP for all numbers.
-      // This must NEVER be true in production — set VITE_DEMO_MODE=false in .env.production
       if (IS_DEMO_MODE) {
         console.warn("DEMO MODE ENABLED — Firebase OTP bypassed for all numbers")
         this.confirmationResult = { isDemo: true }
