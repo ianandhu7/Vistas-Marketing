@@ -155,7 +155,7 @@ export const useSubscriptionStore = defineStore('subscription', {
     },
 
     setUserName(name) {
-      this.userName = name
+      this.userName = name.replace(/[0-9]/g, '')
     },
 
     setOtpDigit(index, digit) {
@@ -241,6 +241,11 @@ export const useSubscriptionStore = defineStore('subscription', {
           // New user — need their name too
           if (!this.userName || this.userName.trim().length < 2) {
             this.setError('Please enter your name')
+            this.loading = false
+            return
+          }
+          if (/[0-9]/.test(this.userName)) {
+            this.setError('Name cannot contain numbers')
             this.loading = false
             return
           }

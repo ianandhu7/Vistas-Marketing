@@ -69,10 +69,10 @@ describe('Subscription Store - Comprehensive Coverage', () => {
     expect(store.accessToken).toBe('mock-token')
   })
 
-  it('sets phone number and username correctly', () => {
+  it('sets phone number and username correctly and strips numbers from name', () => {
     const store = useSubscriptionStore()
     store.setMobileNumber('9876543210')
-    store.setUserName('Alice')
+    store.setUserName('Alice123')
     expect(store.mobileNumber).toBe('9876543210')
     expect(store.userName).toBe('Alice')
   })
@@ -145,6 +145,19 @@ describe('Subscription Store - Comprehensive Coverage', () => {
     await store.sendOtp()
 
     expect(store.error).toBe('Please enter your name')
+    expect(store.currentModal).toBeNull()
+  })
+
+  it('fails to send OTP for new user if name contains numbers', async () => {
+    const store = useSubscriptionStore()
+    store.setMobileNumber('9876543210')
+    store.$state.userName = 'John123' // Bypass the setter filter
+
+    api.checkMobileExists.mockResolvedValue({ data: false })
+
+    await store.sendOtp()
+
+    expect(store.error).toBe('Name cannot contain numbers')
     expect(store.currentModal).toBeNull()
   })
 
