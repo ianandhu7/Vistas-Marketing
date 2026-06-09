@@ -76,8 +76,9 @@ onUnmounted(() => {
         <!-- Already Subscribed Button -->
         <button 
           @click="subscriptionStore.verifySubscriptionAndAccess"
-          class="bg-[#8B5CF6] text-white px-4 py-1.5 rounded-[8px] text-[10px] font-black uppercase tracking-tight shadow-lg hover:brightness-110 active:scale-95 transition-all"
+          class="flex items-center gap-2 bg-transparent text-[var(--text-primary)] border border-[#8B5CF6] px-4 py-1.5 rounded-[12px] text-[10px] font-black uppercase tracking-tight hover:bg-[#8B5CF6]/10 active:scale-95 transition-all"
         >
+          <span class="material-symbols-outlined text-[13px] text-[#A78BFA]" style="font-variation-settings: 'FILL' 1">star</span>
           Already Subscribed? Click Here
         </button>
 

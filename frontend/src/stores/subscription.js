@@ -151,7 +151,7 @@ export const useSubscriptionStore = defineStore('subscription', {
     },
 
     setMobileNumber(number) {
-      this.mobileNumber = number
+      this.mobileNumber = number.replace(/[^0-9]/g, '')
     },
 
     setUserName(name) {
@@ -218,6 +218,16 @@ export const useSubscriptionStore = defineStore('subscription', {
     async sendOtp() {
       if (this.loading) return
 
+      if (!this.userName || this.userName.trim().length < 2) {
+        this.setError('Please enter your name')
+        return
+      }
+
+      if (/[0-9]/.test(this.userName)) {
+        this.setError('Name cannot contain numbers')
+        return
+      }
+
       if (this.mobileNumber.length !== 10) {
         this.setError('Please enter a valid 10-digit mobile number')
         return
@@ -238,17 +248,7 @@ export const useSubscriptionStore = defineStore('subscription', {
             throw new Error(res.message || 'Failed to send OTP')
           }
         } else {
-          // New user — need their name too
-          if (!this.userName || this.userName.trim().length < 2) {
-            this.setError('Please enter your name')
-            this.loading = false
-            return
-          }
-          if (/[0-9]/.test(this.userName)) {
-            this.setError('Name cannot contain numbers')
-            this.loading = false
-            return
-          }
+          // New user — send OTP directly (name already validated above)
           const res = await sendOtpNewUser(this.mobileNumber, this.userName)
           if (res && (res.data === false || res.statusCode === 500)) {
             throw new Error(res.message || 'Failed to send OTP')

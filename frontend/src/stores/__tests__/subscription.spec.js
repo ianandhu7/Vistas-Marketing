@@ -69,9 +69,9 @@ describe('Subscription Store - Comprehensive Coverage', () => {
     expect(store.accessToken).toBe('mock-token')
   })
 
-  it('sets phone number and username correctly and strips numbers from name', () => {
+  it('sets phone number and username correctly, stripping invalid characters', () => {
     const store = useSubscriptionStore()
-    store.setMobileNumber('9876543210')
+    store.setMobileNumber('9876543210abc')
     store.setUserName('Alice123')
     expect(store.mobileNumber).toBe('9876543210')
     expect(store.userName).toBe('Alice')
@@ -101,6 +101,7 @@ describe('Subscription Store - Comprehensive Coverage', () => {
 
   it('validates mobile number length before sending OTP', async () => {
     const store = useSubscriptionStore()
+    store.setUserName('John Doe')
     store.setMobileNumber('123') // Invalid
     await store.sendOtp()
     expect(store.error).toBe('Please enter a valid 10-digit mobile number')
@@ -108,6 +109,7 @@ describe('Subscription Store - Comprehensive Coverage', () => {
 
   it('sends OTP for existing user successfully', async () => {
     const store = useSubscriptionStore()
+    store.setUserName('John Doe')
     store.setMobileNumber('9876543210')
     
     api.checkMobileExists.mockResolvedValue({ data: true })
@@ -163,6 +165,7 @@ describe('Subscription Store - Comprehensive Coverage', () => {
 
   it('handles API errors when sending OTP and parses JSON messages', async () => {
     const store = useSubscriptionStore()
+    store.setUserName('John Doe')
     store.setMobileNumber('9876543210')
     
     api.checkMobileExists.mockResolvedValue({ data: true })

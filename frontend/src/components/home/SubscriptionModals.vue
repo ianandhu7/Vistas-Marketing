@@ -174,7 +174,8 @@ const switchTo14Months = () => {
           <div class="relative">
             <input
               :value="store.userName"
-              @input="store.setUserName($event.target.value)"
+              @input="e => { if (/[0-9]/.test(e.target.value)) { store.setError('Name cannot contain numbers'); e.target.value = e.target.value.replace(/[0-9]/g, ''); } store.setUserName(e.target.value); }"
+              @keypress="e => { if (/[0-9]/.test(e.key)) { e.preventDefault(); store.setError('Name cannot contain numbers'); } }"
               type="text"
               placeholder="Enter your full name"
               class="w-full bg-[var(--bg-secondary)] border border-[var(--border-light)] rounded-xl py-4 px-4 text-[var(--text-primary)] font-black focus:border-[var(--accent-purple)] focus:ring-1 focus:ring-[var(--accent-purple)] outline-none transition-all"
@@ -188,7 +189,8 @@ const switchTo14Months = () => {
             </div>
             <input 
               :value="store.mobileNumber" 
-              @input="store.setMobileNumber($event.target.value)"
+              @input="e => { if (/[^0-9]/.test(e.target.value)) { store.setError('Mobile number can only contain numbers'); e.target.value = e.target.value.replace(/[^0-9]/g, ''); } store.setMobileNumber(e.target.value); }"
+              @keypress="e => { if (!/[0-9]/.test(e.key)) { e.preventDefault(); store.setError('Mobile number can only contain numbers'); } }"
               type="tel" 
               maxlength="10"
               placeholder="Enter 10 digit number"
