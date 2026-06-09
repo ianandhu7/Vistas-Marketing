@@ -5,6 +5,7 @@ node_modules/
 
 # Build output
 dist/
+coverage/
 .next/
 out/
 build/
@@ -47,10 +48,3 @@ yarn-error.log*
 # Backend secrets and configurations
 backend/.env
 backend/secrets/
-
-# Vite Cache
-.vite/
-
-# Test Coverage
-coverage/
-frontend/coverage/
