@@ -76,12 +76,9 @@ onUnmounted(() => {
         <!-- Already Subscribed Button -->
         <button 
           @click="subscriptionStore.verifySubscriptionAndAccess"
-          class="flex flex-col items-center justify-center text-center leading-tight focus:outline-none hover:bg-[#2D1B4E] hover:text-[#FBBF24] hover:shadow-[0_0_15px_rgba(251,191,36,0.3)] hover:border-[#FBBF24] active:scale-95 transition-all px-4 py-2 bg-[#190934] border border-[#7C3AED]/60 rounded-xl select-none shadow-md"
+          class="bg-[#8B5CF6] text-white px-4 py-1.5 rounded-[8px] text-[10px] font-black uppercase tracking-tight shadow-lg hover:brightness-110 active:scale-95 transition-all"
         >
-          <span class="text-[10px] font-bold text-[#FBBF24]">Already subscribed?</span>
-          <span class="text-[10px] font-black text-[#FBBF24]">
-            Check here &gt;
-          </span>
+          Already Subscribed? Click Here
         </button>
 
         <button 

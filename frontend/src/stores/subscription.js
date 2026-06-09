@@ -358,8 +358,8 @@ export const useSubscriptionStore = defineStore('subscription', {
             this.showToast('Subscription Verified!')
             this.openModal('already_subscribed')
           } else {
-            this.setError('No active subscription found. Please complete payment.')
             this.openModal('already_subscribed')
+            this.setError('No active subscription found. Please complete payment.')
           }
           this.loading = false
           return

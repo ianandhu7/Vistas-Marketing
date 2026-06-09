@@ -50,3 +50,7 @@ backend/secrets/
 
 # Vite Cache
 .vite/
+
+# Test Coverage
+coverage/
+frontend/coverage/
