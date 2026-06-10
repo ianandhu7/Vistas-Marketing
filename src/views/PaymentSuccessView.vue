@@ -18,7 +18,7 @@ onMounted(() => {
     countdown.value--
     if (countdown.value <= 0) {
       clearInterval(intervalId)
-      router.push({ name: 'home' })
+      window.location.href = 'https://www.student.vistaslearning.com/guest/update-profile'
     }
   }, 1000)
 })
@@ -105,7 +105,7 @@ onUnmounted(() => {
           Your subscription is now active. We're glad to have you on board.
         </p>
         <p class="text-[11px] font-bold mb-6 transition-colors duration-300" :class="themeStore.theme === 'dark' ? 'text-[#A78BFA]' : 'text-purple-600'">
-          Redirecting to home in {{ countdown }}s...
+          Redirecting to profile page in {{ countdown }}s...
         </p>
 
         <!-- Divider with Sparkle Star -->

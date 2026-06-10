@@ -102,8 +102,22 @@ const handleClick = () => {
         </span>
       </div>
       
-      <!-- Subscribe Button (Solid Gold for Best Value) -->
+      <!-- Subscribe Button or Active Subscription Info -->
+      <template v-if="subscriptionStore.subscriptionCheckDone && subscriptionStore.existingSubscription">
+        <div class="relative z-10 w-full flex flex-col items-center gap-2 mt-2">
+          <span class="text-green-500 text-[11px] md:text-[9px] font-black uppercase tracking-tight">
+            You already have an active subscription!
+          </span>
+          <a 
+            href="https://www.student.vistaslearning.com/guest/"
+            class="cta-button w-full py-2.5 md:py-1.5 text-[11px] md:text-[9px] font-black tracking-widest transition-all duration-300 rounded-full text-center bg-green-600 text-white hover:bg-green-700 hover:shadow-green-600/50 shadow-xl border border-transparent flex items-center justify-center"
+          >
+            GO TO PORTAL
+          </a>
+        </div>
+      </template>
       <button 
+        v-else
         @click="handleClick"
         :class="[
           'cta-button w-full py-2.5 md:py-1.5 text-[11px] md:text-[9px] font-black tracking-widest transition-all duration-300 relative z-10 border border-transparent shadow-xl rounded-full overflow-hidden',
@@ -205,6 +219,8 @@ const handleClick = () => {
 
 /* Hover Lift & Glow for standard plans */
 .pricing-plan-card:hover {
+  position: relative;
+  z-index: 10;
   transform: translateY(-6px) scale(1.005) !important;
   border-color: rgba(168, 85, 247, 0.5) !important;
   box-shadow: 0 20px 40px -5px rgba(124, 58, 237, 0.22), 
@@ -213,6 +229,8 @@ const handleClick = () => {
 
 /* Hover Lift & Glow for Best Value plan */
 .pricing-plan-card.best-value-card:hover {
+  position: relative;
+  z-index: 10;
   transform: translateY(-6px) scale(1.005) !important;
   border-color: #F5A623 !important;
   box-shadow: 0 20px 50px -5px rgba(245, 166, 35, 0.32), 

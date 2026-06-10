@@ -14,6 +14,8 @@ RUN npm run build
 # Production Stage — serve with Nginx
 FROM nginx:stable-alpine AS production-stage
 COPY --from=build-stage /app/dist /usr/share/nginx/html
+# Fix #6 — custom nginx config: brotli/gzip static + immutable cache headers
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 EXPOSE 80
 
 HEALTHCHECK --interval=30s --timeout=5s --retries=3 \

@@ -17,7 +17,7 @@
         </div>
 
         <div class="middle-row flex flex-col md:flex-row gap-5 h-auto md:h-[52%] min-h-0 shrink-0">
-          <div class="video-container-wrapper w-full md:w-[58%] h-[300px] md:h-full min-h-0 overflow-hidden">
+          <div class="video-container-wrapper w-full md:w-[58%] h-[300px] md:h-full min-h-0 overflow-hidden" style="min-height: 300px;">
             <VideoPlayer />
           </div>
           <div class="features-container-wrapper w-full md:w-[42%] h-auto md:h-full min-h-0 overflow-hidden">
@@ -83,7 +83,7 @@
 
     <!-- Video Section — scrolls away normally -->
     <div class="px-3 pt-2 pb-3">
-      <div class="mobile-video-section">
+      <div class="mobile-video-section" style="min-height: 220px;">
         <VideoPlayer />
       </div>
     </div>
@@ -176,9 +176,9 @@
 
 <script setup>
 import { onMounted } from 'vue'
-import VideoPlayer from '../components/home/VideoPlayer.vue'
-import FeaturesColumn from '../components/home/FeaturesColumn.vue'
-import PricingCards from '../components/home/PricingCards.vue'
+import VideoPlayer        from '../components/home/VideoPlayer.vue'
+import FeaturesColumn     from '../components/home/FeaturesColumn.vue'
+import PricingCards       from '../components/home/PricingCards.vue'
 import SubscriptionModals from '../components/home/SubscriptionModals.vue'
 import { useSubscriptionStore } from '../stores/subscription'
 import { useThemeStore } from '../stores/theme'

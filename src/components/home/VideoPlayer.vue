@@ -104,9 +104,7 @@ onMounted(() => {
   window.addEventListener('scroll', handleInteraction, { passive: true })
   window.addEventListener('click', handleInteraction, { passive: true })
   window.addEventListener('touchstart', handleInteraction, { passive: true })
-  setTimeout(() => {
-    isLoading.value = false
-  }, 800)
+  isLoading.value = false
 })
 
 onUnmounted(() => {
@@ -129,12 +127,14 @@ onUnmounted(() => {
 
   <div v-else class="flex flex-col h-full">
     <!-- Video Player Section -->
-    <div class="video-player-container relative group flex-grow bg-black rounded-[14px] overflow-hidden shadow-2xl border border-[var(--border-light)] min-h-0">
+    <div class="video-player-container relative group flex-grow bg-black rounded-[14px] overflow-hidden shadow-2xl border border-[var(--border-light)] min-h-0" style="min-height: 220px;">
       <!-- Poster Image (Permanently mounted LCP Element) -->
       <img 
         src="/hero-video-thumbnail.webp" 
+        srcset="/hero-video-thumbnail-480.webp 480w, /hero-video-thumbnail.webp 1024w"
+        sizes="(max-width: 768px) 480px, 1024px"
         alt="Vistas Learning Video Poster" 
-        class="absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 z-10"
+        class="absolute inset-0 w-full h-full object-cover z-10"
         :class="isVideoPlaying ? 'opacity-0 pointer-events-none' : 'opacity-100'"
         width="1280"
         height="720"
@@ -148,10 +148,10 @@ onUnmounted(() => {
         v-if="userInteracted"
         ref="videoElement"
         class="w-full h-full object-cover opacity-100"
-        autoplay 
+        :autoplay="!isMobileDevice" 
         muted 
         playsinline
-        preload="metadata"
+        :preload="isMobileDevice ? 'none' : 'metadata'"
         :src="deferredSrc"
         width="1280"
         height="720"

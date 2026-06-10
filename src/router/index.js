@@ -1,6 +1,4 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import { defineAsyncComponent } from 'vue'
-import HomeView from '../views/HomeView.vue'
 import { isLoggedIn } from '../services/storage'
 
 const router = createRouter({
@@ -9,27 +7,28 @@ const router = createRouter({
     {
       path: '/',
       name: 'home',
-      component: HomeView
+      // Fix #2 — lazy-load the home bundle; it's the largest single chunk
+      component: () => import('../views/HomeView.vue')
     },
     {
       path: '/courses',
       name: 'courses',
-      component: HomeView
+      component: () => import('../views/HomeView.vue')
     },
     {
       path: '/blog',
       name: 'blog',
-      component: HomeView
+      component: () => import('../views/HomeView.vue')
     },
     {
       path: '/pricing',
       name: 'pricing',
-      component: HomeView
+      component: () => import('../views/HomeView.vue')
     },
     {
       path: '/payment-success',
       name: 'payment-success',
-      component: defineAsyncComponent(() => import('../views/PaymentSuccessView.vue')),
+      component: () => import('../views/PaymentSuccessView.vue'),
       meta: { requiresAuth: true }
     },
     {

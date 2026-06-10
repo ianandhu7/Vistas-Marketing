@@ -111,7 +111,17 @@ export const useSubscriptionStore = defineStore('subscription', {
     // Auth — loaded from localStorage on startup
     accessToken: getUserFromLocalStorage().accessToken,
     userData: getUserFromLocalStorage().userData,
-    subscriptionStatus: getUserFromLocalStorage().isSubscribed ? 'active' : null
+    subscriptionStatus: getUserFromLocalStorage().isSubscribed ? 'active' : null,
+
+    // Products & Plans
+    productList: [],
+    productMap: {},
+    selectedProductObj: null,
+
+    // Subscription status check
+    subscriptionCheckDone: false,
+    existingSubscription: false,
+    subscriptionExpired: false
   }),
 
   actions: {
@@ -168,6 +178,7 @@ export const useSubscriptionStore = defineStore('subscription', {
 
     setSelectedPlan(plan) {
       this.selectedPlan = plan
+      this.selectedProductObj = this.productMap[plan] || null
     },
 
     toggleTermsAccepted() {
@@ -188,6 +199,7 @@ export const useSubscriptionStore = defineStore('subscription', {
 
     handlePlanSelect(planId) {
       this.selectedPlan = planId
+      this.selectedProductObj = this.productMap[planId] || null
       this.termsAccepted = false
 
       if (planId === '3months' || planId === '6months') {
@@ -342,8 +354,10 @@ export const useSubscriptionStore = defineStore('subscription', {
           userData = registerResult.data
         }
 
-        // Save everything to localStorage
-        saveUserToLocalStorage(userData)
+        // Save everything to localStorage asynchronously to avoid blocking main thread
+        setTimeout(() => {
+          saveUserToLocalStorage(userData)
+        }, 0)
 
         // Update store state
         this.accessToken = userData.accessToken
@@ -379,18 +393,61 @@ export const useSubscriptionStore = defineStore('subscription', {
         }
 
         // ── Activate subscription directly ──
-        this.subscriptionStatus = 'active'
-        if (this.userData) {
-          this.userData.subscriptionFlag = true
-          saveUserToLocalStorage(this.userData)
-        } else {
+        try {
           const auth = getUserFromLocalStorage()
-          auth.isSubscribed = true
-          localStorage.setItem('vista-auth', JSON.stringify(auth))
+          const token = auth.accessToken
+
+          if (!this.selectedProductObj) {
+            this.setError('Plan details not found. Please try again.')
+            this.loading = false
+            return
+          }
+
+          // Call backend to generate Paytm transaction
+          const payRes = await fetch(
+            'https://api-prod.vistaslearning.com/api/v2/subscription/user-newsubscription',
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+              },
+              body: JSON.stringify(this.selectedProductObj)
+            }
+          )
+
+          const payData = await payRes.json()
+
+          if (!payRes.ok || !payData.data || !payData.data.paymentParameters) {
+            this.setError(payData.message || 'Payment initiation failed. Please try again.')
+            this.loading = false
+            return
+          }
+
+          // Build hidden form and submit to Paytm gateway
+          const params = payData.data.paymentParameters
+          const form = document.createElement('form')
+          form.method = 'POST'
+          form.action = import.meta.env.VITE_PAYTM_URL || 'https://securegw.paytm.in/order/process'
+
+          Object.entries(params).forEach(([key, value]) => {
+            if (key !== 'paytmUrl' && key !== 'txnUrl' && key !== 'gatewayUrl') {
+              const input = document.createElement('input')
+              input.type = 'hidden'
+              input.name = key
+              input.value = value
+              form.appendChild(input)
+            }
+          })
+
+          document.body.appendChild(form)
+          form.submit()
+
+        } catch (err) {
+          console.error('Payment initiation error:', err)
+          this.setError('Payment initiation failed. Please try again.')
+          this.loading = false
         }
-        this.showToast("Subscription Activated!")
-        this.closeModal()
-        window.location.href = 'https://www.student.vistaslearning.com/guest/'
 
       } catch (err) {
         console.error('Verify OTP error:', err)
@@ -406,6 +463,66 @@ export const useSubscriptionStore = defineStore('subscription', {
         this.setError(errMsg)
       } finally {
         this.loading = false
+      }
+    },
+
+    async fetchSubscriptionProducts() {
+      if (this.productList.length > 0) return
+      try {
+        const res = await fetch('https://api-prod.vistaslearning.com/api/v2/Product/user-subscription-product?productCd=AD_FREE_SUBSCRIPTION')
+        const json = await res.json()
+        if (json && Array.isArray(json.data)) {
+          this.productList = json.data
+          const mapping = {}
+          json.data.forEach(product => {
+            if (product.duration === 90 || product.durationCode === 'QUARTER') {
+              mapping['3months'] = product
+            } else if (product.duration === 180 || product.durationCode === 'HALF_YEAR') {
+              mapping['6months'] = product
+            } else if (
+              (product.duration === 365 || product.durationCode === 'ANNUAL') &&
+              product.productCd === 'AD_FREE_SUBSCRIPTION'
+            ) {
+              mapping['14months'] = product
+            }
+          })
+          this.productMap = mapping
+        }
+      } catch (err) {
+        console.error('Error fetching subscription products:', err)
+      }
+    },
+
+    async checkExistingSubscription() {
+      if (this.subscriptionCheckDone) return
+      try {
+        const userSurId = getUserFromLocalStorage().userSurId
+        if (!userSurId) {
+          this.subscriptionCheckDone = true
+          return
+        }
+        const accessToken = getUserFromLocalStorage().accessToken
+        const res = await fetch(
+          `https://api-prod.vistaslearning.com/api/v1/subscription/check-user-subscription?userSurId=${userSurId}`,
+          {
+            headers: {
+              'Authorization': `Bearer ${accessToken}`
+            }
+          }
+        )
+        const json = await res.json()
+        if (json && json.data) {
+          if (json.data.existingSubscription === true && json.data.expiredSubscription === false) {
+            this.existingSubscription = true
+          }
+          if (json.data.expiredSubscription === true) {
+            this.subscriptionExpired = true
+          }
+        }
+      } catch (err) {
+        // fail silently
+      } finally {
+        this.subscriptionCheckDone = true
       }
     }
   }

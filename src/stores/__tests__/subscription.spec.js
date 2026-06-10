@@ -5,13 +5,15 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 let mockStorage = {
   accessToken: 'mock-token',
   userData: { name: 'Test User', subscriptionFlag: false },
-  isSubscribed: false
+  isSubscribed: false,
+  userSurId: '123'
 }
 
 function resetMockStorage() {
   mockStorage.accessToken = 'mock-token'
   mockStorage.userData = { name: 'Test User', subscriptionFlag: false }
   mockStorage.isSubscribed = false
+  mockStorage.userSurId = '123'
 }
 
 // Mock storage before store is imported
@@ -55,6 +57,23 @@ describe('Subscription Store - Comprehensive Coverage', () => {
     // Reset window location mock
     delete window.location
     window.location = { href: '' }
+
+    // Mock global fetch
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        statusCode: 200,
+        data: {
+          paymentParameters: {
+            paytmUrl: 'https://securegw-stage.paytm.in/order/process',
+            MID: 'TestMID'
+          }
+        }
+      })
+    }))
+
+    // Spy/Mock form submit
+    vi.spyOn(HTMLFormElement.prototype, 'submit').mockImplementation(() => {})
   })
 
   afterEach(() => {
@@ -208,15 +227,18 @@ describe('Subscription Store - Comprehensive Coverage', () => {
     store.termsAccepted = true
     store.otp = ['1', '2', '3', '4', '5', '6']
     store.isExistingUser = true
+    store.selectedProductObj = { idProduct: 123 }
     
     const mockUserData = { accessToken: 'new-session-token', subscriptionFlag: false }
     api.verifyOtpExistingUser.mockResolvedValue({ status: true, data: mockUserData })
+
+    const submitSpy = vi.spyOn(HTMLFormElement.prototype, 'submit')
 
     await store.verifyOtpAndCheckout()
 
     expect(api.verifyOtpExistingUser).toHaveBeenCalledWith(store.mobileNumber, '123456')
     expect(store.accessToken).toBe('new-session-token')
-    expect(window.location.href).toBe('https://www.student.vistaslearning.com/guest/')
+    expect(submitSpy).toHaveBeenCalled()
   })
 
   it('handles verification failure for existing user', async () => {
@@ -240,6 +262,7 @@ describe('Subscription Store - Comprehensive Coverage', () => {
     store.isExistingUser = false
     store.mobileNumber = '9876543210'
     store.userName = 'Jane Doe'
+    store.selectedProductObj = { idProduct: 123 }
 
     api.verifyOtpNewUser.mockResolvedValue({ data: true })
     api.registerNewUser.mockResolvedValue({
@@ -247,11 +270,14 @@ describe('Subscription Store - Comprehensive Coverage', () => {
       data: { accessToken: 'new-user-token', subscriptionFlag: false }
     })
 
+    const submitSpy = vi.spyOn(HTMLFormElement.prototype, 'submit')
+
     await store.verifyOtpAndCheckout()
 
     expect(api.verifyOtpNewUser).toHaveBeenCalledWith('9876543210', '123456')
     expect(api.registerNewUser).toHaveBeenCalledWith('9876543210', 'Jane Doe', '123456')
     expect(store.accessToken).toBe('new-user-token')
+    expect(submitSpy).toHaveBeenCalled()
   })
 
   it('handles verifyOtp failure for new user', async () => {
@@ -325,7 +351,7 @@ describe('Subscription Store - Comprehensive Coverage', () => {
     store.isExistingUser = true
     store.isStatusChecking = false
 
-    const mockUserData = { accessToken: 'token', subscriptionFlag: true }
+    const mockUserData = { accessToken: 'token', subscriptionFlag: { subscribedFlag: true } }
     api.verifyOtpExistingUser.mockResolvedValue({ status: true, data: mockUserData })
 
     await store.verifyOtpAndCheckout()
@@ -339,6 +365,7 @@ describe('Subscription Store - Comprehensive Coverage', () => {
     store.termsAccepted = true
     store.otp = ['1', '2', '3', '4', '5', '6']
     store.isExistingUser = true
+    store.selectedProductObj = { idProduct: 123 }
     
     // Force userData to be missing in store by using defineProperty
     const mockUserData = { accessToken: 'token', subscriptionFlag: false }
@@ -350,14 +377,11 @@ describe('Subscription Store - Comprehensive Coverage', () => {
       configurable: true
     })
 
-    // Set spy on localStorage
-    const setItemSpy = vi.spyOn(Storage.prototype, 'setItem')
+    const submitSpy = vi.spyOn(HTMLFormElement.prototype, 'submit')
 
     await store.verifyOtpAndCheckout()
 
-    expect(store.subscriptionStatus).toBe('active')
-    expect(setItemSpy).toHaveBeenCalled()
-    setItemSpy.mockRestore()
+    expect(submitSpy).toHaveBeenCalled()
   })
 
   it('handles checkout try-catch error and formats error message', async () => {
@@ -371,5 +395,151 @@ describe('Subscription Store - Comprehensive Coverage', () => {
     await store.verifyOtpAndCheckout()
 
     expect(store.error).toBe('Network Fail')
+  })
+
+  describe('checkExistingSubscription', () => {
+    it('sets subscriptionCheckDone to true and returns if userSurId is missing', async () => {
+      const store = useSubscriptionStore()
+      mockStorage.userSurId = null
+
+      await store.checkExistingSubscription()
+
+      expect(store.subscriptionCheckDone).toBe(true)
+      expect(store.existingSubscription).toBe(false)
+    })
+
+    it('sets existingSubscription to true if active and not expired', async () => {
+      const store = useSubscriptionStore()
+      mockStorage.userSurId = '123'
+      mockStorage.accessToken = 'test-token'
+
+      global.fetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          statusCode: 200,
+          data: {
+            existingSubscription: true,
+            expiredSubscription: false
+          }
+        })
+      })
+
+      await store.checkExistingSubscription()
+
+      expect(store.existingSubscription).toBe(true)
+      expect(store.subscriptionExpired).toBe(false)
+      expect(store.subscriptionCheckDone).toBe(true)
+    })
+
+    it('sets subscriptionExpired to true if expired', async () => {
+      const store = useSubscriptionStore()
+      mockStorage.userSurId = '123'
+      mockStorage.accessToken = 'test-token'
+
+      global.fetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          statusCode: 200,
+          data: {
+            existingSubscription: false,
+            expiredSubscription: true
+          }
+        })
+      })
+
+      await store.checkExistingSubscription()
+
+      expect(store.existingSubscription).toBe(false)
+      expect(store.subscriptionExpired).toBe(true)
+      expect(store.subscriptionCheckDone).toBe(true)
+    })
+
+    it('fails silently and sets subscriptionCheckDone to true on error', async () => {
+      const store = useSubscriptionStore()
+      mockStorage.userSurId = '123'
+      mockStorage.accessToken = 'test-token'
+
+      global.fetch.mockRejectedValueOnce(new Error('Network Error'))
+
+      await store.checkExistingSubscription()
+
+      expect(store.subscriptionCheckDone).toBe(true)
+    })
+  })
+
+  describe('fetchSubscriptionProducts', () => {
+    it('fetches and maps products correctly', async () => {
+      const store = useSubscriptionStore()
+      
+      global.fetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          data: [
+            { duration: 90, durationCode: 'QUARTER', amount: 399, productCd: 'AD_FREE_SUBSCRIPTION' },
+            { duration: 180, durationCode: 'HALF_YEAR', amount: 699, productCd: 'AD_FREE_SUBSCRIPTION' },
+            { duration: 365, durationCode: 'ANNUAL', productCd: 'AD_FREE_SUBSCRIPTION', amount: 1999 }
+          ]
+        })
+      })
+
+      await store.fetchSubscriptionProducts()
+
+      expect(store.productList.length).toBe(3)
+      expect(store.productMap['3months'].amount).toBe(399)
+      expect(store.productMap['6months'].amount).toBe(699)
+      expect(store.productMap['14months'].amount).toBe(1999)
+    })
+
+    it('skips fetch if productList is already populated', async () => {
+      const store = useSubscriptionStore()
+      store.productList = [{ duration: 90 }]
+      
+      await store.fetchSubscriptionProducts()
+      expect(global.fetch).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('handlePlanSelect', () => {
+    it('updates selectedPlan, selects product object, and opens modal', () => {
+      const store = useSubscriptionStore()
+      const mockProduct = { idProduct: 10 }
+      store.productMap = { '3months': mockProduct, '14months': { idProduct: 20 } }
+
+      store.handlePlanSelect('3months')
+      expect(store.selectedPlan).toBe('3months')
+      expect(store.selectedProductObj).toStrictEqual(mockProduct)
+      expect(store.currentModal).toBe('comparison')
+
+      store.handlePlanSelect('14months')
+      expect(store.selectedPlan).toBe('14months')
+      expect(store.currentModal).toBe('mobile')
+    })
+  })
+
+  describe('setSelectedPlan', () => {
+    it('updates selectedPlan and selectedProductObj correctly', () => {
+      const store = useSubscriptionStore()
+      const mockProduct = { idProduct: 10 }
+      store.productMap = { '3months': mockProduct }
+
+      store.setSelectedPlan('3months')
+      expect(store.selectedPlan).toBe('3months')
+      expect(store.selectedProductObj).toStrictEqual(mockProduct)
+
+      store.setSelectedPlan('invalid-id')
+      expect(store.selectedPlan).toBe('invalid-id')
+      expect(store.selectedProductObj).toBeNull()
+    })
+  })
+
+  describe('toast and error helpers', () => {
+    it('sets toastMessage and clears it after timer', () => {
+      const store = useSubscriptionStore()
+      store.showToast('Test Toast')
+      expect(store.toastMessage).toBe('Test Toast')
+      
+      vi.advanceTimersByTime(3000)
+      expect(store.toastMessage).toBeNull()
+    })
   })
 })

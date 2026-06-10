@@ -4,17 +4,21 @@ import { fileURLToPath, URL } from 'node:url'
 import compression from 'vite-plugin-compression'
 
 // https://vitejs.dev/config/
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   plugins: [
     vue(),
-    compression({
-      algorithm: 'gzip',
-      ext: '.gz',
-    }),
+    // Brotli (preferred by modern browsers — ~20% smaller than gzip)
     compression({
       algorithm: 'brotliCompress',
       ext: '.br',
-    })
+      threshold: 1024,
+    }),
+    // Gzip fallback for older clients / CDNs
+    compression({
+      algorithm: 'gzip',
+      ext: '.gz',
+      threshold: 1024,
+    }),
   ],
   resolve: {
     alias: {
@@ -32,26 +36,33 @@ export default defineConfig({
     }
   },
   build: {
-    target: 'esnext',
-    minify: 'esbuild',
+    target: 'es2015',
     cssCodeSplit: true,
+    // Fix #1 — full JS minification via esbuild (faster than terser, same output)
+    minify: 'esbuild',
+    // Fix #7 — minify CSS in production
+    cssMinify: true,
+    // Fix #1 — never bundle source maps into production output
+    sourcemap: process.env.VITE_SOURCEMAP === 'true' ? 'inline' : false,
     chunkSizeWarningLimit: 600,
     rollupOptions: {
       output: {
-        manualChunks(id) {
-          if (id.includes('node_modules')) {
-            if (id.includes('vue-router')) return 'vendor-vue-router'
-            if (id.includes('pinia')) return 'vendor-pinia'
-            if (id.includes('axios')) return 'vendor-axios'
-            if (id.includes('vue') || id.includes('@vue')) return 'vendor-vue'
-            return 'vendor'
-          }
+        manualChunks: {
+          vendor: ['vue', 'pinia', 'vue-router']
         }
       }
     }
+  },
+  // Fix #1 — explicit esbuild minify options
+  esbuild: {
+    minifyIdentifiers: true,
+    minifySyntax: true,
+    minifyWhitespace: true,
+    // Drop console.* and debugger in production
+    drop: mode === 'production' ? ['console', 'debugger'] : [],
   },
   test: {
     globals: true,
     environment: 'jsdom'
   }
-})
+}))

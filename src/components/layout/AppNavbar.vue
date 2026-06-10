@@ -41,6 +41,7 @@ onUnmounted(() => {
             alt="Vistas Learning" 
             width="108"
             height="36"
+            fetchpriority="high"
             class="h-full w-auto object-contain transition-opacity duration-300" 
           />
         </div>
@@ -78,10 +79,10 @@ onUnmounted(() => {
         <!-- Already Subscribed Button -->
         <button 
           @click="subscriptionStore.verifySubscriptionAndAccess"
-          class="flex items-center gap-2 bg-transparent text-[var(--text-primary)] border border-[#8B5CF6] px-4 py-1.5 rounded-[12px] text-[10px] font-black uppercase tracking-tight hover:bg-[#8B5CF6]/10 active:scale-95 transition-all"
+          class="flex items-center gap-0.5 sm:gap-2 bg-transparent text-[var(--text-primary)] border border-[#8B5CF6] px-1.5 sm:px-4 py-1 sm:py-1.5 rounded-[12px] text-[7.5px] xs:text-[9px] sm:text-[10px] font-black uppercase tracking-tight hover:bg-[#8B5CF6]/10 active:scale-95 transition-all text-center leading-tight"
         >
-          <span class="material-symbols-outlined text-[13px] text-[#A78BFA]" style="font-variation-settings: 'FILL' 1">star</span>
-          Already Subscribed? Click Here
+          <span class="material-symbols-outlined text-[10px] sm:text-[13px] text-[#A78BFA] shrink-0" style="font-variation-settings: 'FILL' 1">star</span>
+          <span class="max-w-[70px] xs:max-w-[90px] sm:max-w-none">Already Subscribed? Click Here</span>
         </button>
 
         <button 
